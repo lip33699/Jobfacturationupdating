@@ -1,4 +1,4 @@
- New jobname: C063_OF_CTM--_Jobextractest1
+ New foldername: C063_OF_CTM--_Jobextractest1
  
  
  ****************************************************************************************************************************************************
@@ -101,4 +101,5 @@ echo "Fin traitement de fusion..."
 # Traitement - Fin
 #-----------------------
 echo "Fin traitement OK"
+
 exit 0
