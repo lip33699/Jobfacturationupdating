@@ -1,0 +1,100 @@
+#!/usr/bin/ksh
+#----------------------------------------------------------------
+# Objet                    : Fusion des extractions des tables cmr_nodes des Control-M Server
+# Auteur                  : Adams N
+# Variables utilisees    :
+#
+#                             RPT_LOG_DIR              : Repertoire des fichiers LOG
+#                             RPT_LOG_FILE             : Nom du nom du fichier LOG
+#                             SCR_LSTENV                : Liste des environnements CTM traites
+#----------------------------------------------------------------
+echo "--------------------------------------------------------------------------------------------"
+echo " Fusion des extractions des tables cmr_nodes des Control-M Server "
+echo "--------------------------------------------------------------------------------------------"
+echo
+#
+# Control parametre variables
+#--------------------------------------
+if [[ -z ${RPT_LOG_DIR} ]] ; then
+ echo "Le parametre RPT_LOG_DIR n'est pas renseigne"
+ echo "Abandon traitement..."
+ exit 1
+fi
+if [[ ! -d ${RPT_LOG_DIR} ]] ; then
+ echo "Le repertoire RPT_LOG_DIR n'existe pas : ${RPT_LOG_DIR}"
+ echo "Abandon traitement..."
+ exit 1
+fi
+#if [[ -z ${RPT_LOG_FILE} ]] ; then
+ #echo "Le parametre RPT_LOG_FILE n'est pas renseigne"
+ #echo "Abandon traitement..."
+ #exit 1
+#fi
+if [[ -z ${SCR_LSTENV} ]] ; then
+ echo "Le parametre SCR_LSTENV n'est pas renseigne"
+ echo "Abandon traitement..."
+ exit 1
+fi
+
+echo "Parametres :"
+echo "RPT_LOG_DIR  : ${RPT_LOG_DIR}"
+echo "RPT_LOG_FILE : ${RPT_LOG_FILE}"
+echo "SCR_LSTENV    : ${SCR_LSTENV}"
+echo
+#
+# Valorisation parametre de traitement
+#---------------------------------------------------
+RPT_NBAGT=0
+RPT_FILE=${RPT_LOG_DIR}/${RPT_LOG_FILE}
+RPT_WORK=${RPT_LOG_DIR}/Work.tmp
+RPT_TITLE="owner;data_cntr_name;compat_version;nodeid;hostname;domain_name;version;phys_nodeid;nodetype;agstat"
+HOSTNAME=$(hostname -s)
+DATE=$(date  +%Y%m)
+RPT_LOG_FILE="Control-M_Agent_${HOSTNAME}_${DATE}.txt"
+#
+# Traitement - Debut
+#----------------------------
+echo "Traitement..."
+#
+# Initialisation du fichier REPORT
+
+rm -f ${RPT_FILE}
+touch ${RPT_FILE}
+if [[ $? -ne 0 ]] ; then
+ echo
+ echo "RC($?) Probleme creation fichier REPORT : ${RPT_FILE}"
+ echo "Abandon traitement..."
+ exit 1
+fi
+echo ${RPT_TITLE} > ${RPT_FILE}
+#
+# Fusion des extractions des tables cmr_nodes des Control-M Server
+
+for FICEXT in $(echo $SCR_LSTENV | tr ";" " ")
+do
+ echo "Traitement fichier ${FICEXT}_Liste_Agents.txt"
+ Client=$(echo ${FICEXT} | cut -c 4-7)
+ NB_LIGNE=$(cat ${RPT_LOG_DIR}/${FICEXT}_Liste_Agents.txt | grep -v "^data_cntr_name" | grep ";" |  wc -l)
+ cat ${RPT_LOG_DIR}/${FICEXT}_Liste_Agents.txt | egrep -v "^data_cntr_name" | grep ";" > ${RPT_WORK}
+ while read LINE 
+ do 
+ echo $Client";"$LINE >> ${RPT_FILE}
+ done < ${RPT_WORK}
+ echo "nombre d'agent(s) detecte(s) : ${NB_LIGNE}"
+ echo
+done
+rm -f  ${RPT_WORK}
+NB_AGENT_TOTAL=$(cat ${RPT_FILE} | grep -v "^nodeid" | wc -l)
+NB_AGENT_VALIDE=$(cat ${RPT_FILE} | grep "\"V " | wc -l)
+NB_AGENT_NOVALIDE=$(cat ${RPT_FILE} | grep "\"U " | wc -l)
+echo "------------------------------------------------------------------------------------------------------"
+echo " - Nombre total d'agents detectes$           : ${NB_AGENT_TOTAL}"
+echo " - Nombre d'agents VALIDE                    : ${NB_AGENT_VALIDE}"
+echo " - Nombre d'agents NON VALIDE                : ${NB_AGENT_NOVALIDE}"
+echo
+echo "Fin traitement de fusion..."
+#
+# Traitement - Fin
+#-----------------------
+echo "Fin traitement OK"
+exit 0
